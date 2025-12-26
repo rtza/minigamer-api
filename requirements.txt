@@ -1,0 +1,31 @@
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+# Simulação de banco de dados em memória
+licencas = {
+    "CLIENTE1KEY": {"status": "ativo", "dias": 30, "hwid": None},
+    "CLIENTE2KEY": {"status": "ativo", "dias": 15, "hwid": None}
+}
+
+@app.route("/validar", methods=["POST"])
+def validar():
+    data = request.json
+    chave = data.get("chave")
+    hwid = data.get("hwid")
+
+    if chave not in licencas:
+        return jsonify({"valido": False, "mensagem": "Chave inexistente"}), 400
+
+    licenca = licencas[chave]
+
+    # Primeira ativação: vincula HWID
+    if licenca["hwid"] is None:
+        licenca["hwid"] = hwid
+        return jsonify({"valido": True, "mensagem": f"Chave vinculada ao HWID {hwid}"})
+
+    # Verifica se HWID bate
+    if licenca["hwid"] == hwid and licenca["status"] == "ativo":
+        return jsonify({"valido": True, "mensagem": "Licença válida neste PC"})
+    else:
+        return jsonify({"valido": False, "mensagem": "HWID diferente. Chave já usada em outro PC"})
