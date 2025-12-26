@@ -1,3 +1,22 @@
+from flask import Flask, request, jsonify
+import requests
+import base64
+import os
+
+app = Flask(__name__)   # ✅ objeto Flask criado aqui
+
+# Variáveis de ambiente do Render
+GITHUB_REPO = os.getenv("GITHUB_REPO")       # exemplo: rtza/keys
+GITHUB_PATH = os.getenv("GITHUB_PATH")       # exemplo: licencas.txt
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")     # seu token secreto
+
+# URL da API do GitHub
+GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_PATH}"
+
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"status": "ok", "mensagem": "API MiniGamer funcionando 🚀"})
+
 @app.route("/validar", methods=["POST"])
 def validar():
     dados = request.get_json()
