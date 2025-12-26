@@ -3,6 +3,7 @@ import os
 
 app = Flask(__name__)
 
+# Caminho absoluto para garantir que o arquivo seja encontrado
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LICENCAS_PATH = os.path.join(BASE_DIR, "licencas.txt")
 
@@ -14,6 +15,7 @@ def validar():
 
     licencas = []
     atualizado = False
+    resposta = {"valido": False, "mensagem": "❌ Chave inválida"}
 
     # Lê todas as licenças
     with open(LICENCAS_PATH, "r") as f:
@@ -23,7 +25,7 @@ def validar():
 
     # Procura a chave
     for licenca in licencas:
-        if licenca[0] == chave and licenca[1] == "ativo":
+        if licenca[0] == chave and licenca[1] in ["ativo", "usado"]:
             if licenca[2] == "null":
                 # Primeira ativação → grava HWID
                 licenca[2] = hwid
@@ -39,8 +41,6 @@ def validar():
                 # HWID diferente → bloqueia
                 resposta = {"valido": False, "mensagem": "❌ Licença já usada em outro dispositivo"}
             break
-    else:
-        resposta = {"valido": False, "mensagem": "❌ Chave inválida"}
 
     # Se houve atualização, salva o arquivo
     if atualizado:
@@ -49,3 +49,6 @@ def validar():
                 f.write("|".join(licenca) + "\n")
 
     return jsonify(resposta)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
