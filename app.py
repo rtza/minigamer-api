@@ -1,21 +1,6 @@
 from flask import Flask, request, jsonify
-import requests
-import base64
-import os
 
-app = Flask(__name__)   # ✅ objeto Flask criado aqui
-
-# Variáveis de ambiente do Render
-GITHUB_REPO = os.getenv("GITHUB_REPO")       # exemplo: rtza/keys
-GITHUB_PATH = os.getenv("GITHUB_PATH")       # exemplo: licencas.txt
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")     # seu token secreto
-
-# URL da API do GitHub
-GITHUB_API_URL = f"https://api.github.com/repos/{GITHUB_REPO}/contents/{GITHUB_PATH}"
-
-@app.route("/", methods=["GET"])
-def home():
-    return jsonify({"status": "ok", "mensagem": "API MiniGamer funcionando 🚀"})
+app = Flask(__name__)
 
 @app.route("/validar", methods=["POST"])
 def validar():
@@ -23,71 +8,47 @@ def validar():
     chave = dados.get("chave")
     hwid = dados.get("hwid")
 
-    if not chave or not hwid:
-        return jsonify({"valido": False, "mensagem": "Chave ou HWID não fornecidos"})
+    with open("licencas.txt", "r") as f:
+        linhas = f.readlines()
 
-    headers = {"Authorization": f"token {GITHUB_TOKEN}"}
-    resposta = requests.get(GITHUB_API_URL, headers=headers)
-
-    if resposta.status_code != 200:
-        return jsonify({"valido": False, "mensagem": "Erro interno, tente novamente mais tarde"})
-
-    conteudo = resposta.json()
-    linhas = base64.b64decode(conteudo["content"]).decode().splitlines()
-
-    novas_linhas = []
-    chave_encontrada = False
+    nova_lista = []
     valido = False
-    mensagem = "Licença não encontrada"
+    mensagem = "❌ Chave inválida"
+    dias = 30  # padrão
 
     for linha in linhas:
         partes = linha.strip().split("|")
+        if len(partes) < 4:
+            continue
 
-        if partes[0] == chave:
-            chave_encontrada = True
-            status = partes[1]
-            hwid_registrado = partes[2] if len(partes) >= 3 else "null"
+        chave_arquivo, status, hwid_arquivo, dias_arquivo = partes
 
-            if status == "ativo" and hwid_registrado in ["null", "", None]:
-                partes[1] = "usado"
-                if len(partes) < 3:
-                    partes.append(hwid)
-                else:
-                    partes[2] = hwid
-                linha = "|".join(partes)
+        if chave == chave_arquivo:
+            if status == "ativo":
+                # primeira ativação
+                valido = True
                 mensagem = "✅ Licença ativada com sucesso"
+                dias = int(dias_arquivo)
+                nova_lista.append(f"{chave}|usado|{hwid}|{dias_arquivo}\n")
+            elif status == "usado" and hwid == hwid_arquivo:
+                # já usada neste PC
                 valido = True
-
-            elif status == "usado" and hwid_registrado == hwid:
-                mensagem = "Licença válida para este dispositivo"
-                valido = True
-
-            elif status == "usado":
-                mensagem = "⚠️ Essa licença já foi utilizada em outro dispositivo"
-                valido = False
-
+                mensagem = "✅ Licença validada neste dispositivo"
+                dias = int(dias_arquivo)
+                nova_lista.append(linha)
             elif status == "bloqueado":
                 mensagem = "🚫 Essa licença foi bloqueada"
-                valido = False
-
+                nova_lista.append(linha)
             else:
-                mensagem = "❌ Licença inválida"
-                valido = False
+                mensagem = "⚠️ Essa licença já foi utilizada em outro dispositivo"
+                nova_lista.append(linha)
+        else:
+            nova_lista.append(linha)
 
-        novas_linhas.append(linha)
+    with open("licencas.txt", "w") as f:
+        f.writelines(nova_lista)
 
-    if chave_encontrada:
-        novo_conteudo = "\n".join(novas_linhas)
-        payload = {
-            "message": f"Atualizando chave {chave}",
-            "content": base64.b64encode(novo_conteudo.encode()).decode(),
-            "sha": conteudo["sha"]
-        }
-        put_resposta = requests.put(GITHUB_API_URL, headers=headers, json=payload)
+    return jsonify({"valido": valido, "mensagem": mensagem, "dias": dias})
 
-        if put_resposta.status_code not in [200, 201]:
-            return jsonify({"valido": False, "mensagem": "Erro interno ao salvar alterações"})
-
-        return jsonify({"valido": valido, "mensagem": mensagem})
-    else:
-        return jsonify({"valido": False, "mensagem": "Licença não encontrada"})
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
