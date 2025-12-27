@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import os
 import subprocess
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -8,25 +9,21 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LICENCAS_PATH = os.path.join(BASE_DIR, "licencas.txt")
 
 def salvar_licencas(licencas):
-    # Salva localmente no servidor Render
     with open(LICENCAS_PATH, "w") as f:
         for licenca in licencas:
             f.write("|".join(licenca) + "\n")
 
-    # Faz commit e push para o GitHub
     repo = os.environ.get("GITHUB_REPO")
     user = os.environ.get("GITHUB_USER")
     token = os.environ.get("GITHUB_TOKEN")
 
     if repo and user and token:
-        # Garante que estamos na branch main (evita detached HEAD)
         subprocess.run(["git", "checkout", "main"])
         subprocess.run(["git", "pull", "origin", "main"])
-
         subprocess.run(["git", "config", "--global", "user.email", "bot@render.com"])
         subprocess.run(["git", "config", "--global", "user.name", "RenderBot"])
         subprocess.run(["git", "add", "licencas.txt"])
-        subprocess.run(["git", "commit", "-m", "Atualizando HWID"])
+        subprocess.run(["git", "commit", "-m", "Atualizando HWID/Status"])
         subprocess.run([
             "git", "push",
             f"https://{user}:{token}@github.com/{repo}.git",
@@ -43,37 +40,50 @@ def validar():
     resposta = {"valido": False, "mensagem": "❌ Chave inválida"}
     atualizado = False
 
-    # Lê todas as licenças
     with open(LICENCAS_PATH, "r") as f:
         for linha in f:
             partes = linha.strip().split("|")
             licencas.append(partes)
 
-    # Procura a chave
     for licenca in licencas:
         if licenca[0] == chave:
-            if licenca[1] == "bloqueado":
-                # Nova regra: chave bloqueada manualmente
+            status = licenca[1]
+            hwid_registrado = licenca[2]
+            dias = int(licenca[3])
+            data_ativacao = None
+            if len(licenca) >= 5:
+                try:
+                    data_ativacao = datetime.strptime(licenca[4], "%Y-%m-%d %H:%M:%S")
+                except:
+                    data_ativacao = datetime.strptime(licenca[4], "%Y-%m-%d")
+
+            if status == "bloqueado":
                 resposta = {"valido": False, "mensagem": "❌ Licença bloqueada pelo administrador"}
                 break
-            elif licenca[1] in ["ativo", "usado"]:
-                if licenca[2] == "null":
-                    # Primeira ativação → grava HWID
+
+            if status in ["ativo", "usado"]:
+                if hwid_registrado == "null":
                     licenca[2] = hwid
                     licenca[1] = "usado"
+                    if len(licenca) < 5:
+                        licenca.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                     atualizado = True
-                    dias = int(licenca[3])
                     resposta = {"valido": True, "mensagem": "✅ Licença ativada com sucesso", "dias": dias}
-                elif licenca[2] == hwid:
-                    # Mesmo PC → válido
-                    dias = int(licenca[3])
-                    resposta = {"valido": True, "mensagem": "Licença válida", "dias": dias}
+                elif hwid_registrado == hwid:
+                    if data_ativacao:
+                        data_final = data_ativacao + timedelta(days=dias)
+                        if datetime.now() > data_final:
+                            licenca[1] = "bloqueado"
+                            resposta = {"valido": False, "mensagem": "❌ Licença bloqueada pelo servidor"}
+                            atualizado = True
+                        else:
+                            resposta = {"valido": True, "mensagem": "Licença válida", "dias": dias}
+                    else:
+                        resposta = {"valido": True, "mensagem": "Licença válida", "dias": dias}
                 else:
-                    # HWID diferente → bloqueia
                     resposta = {"valido": False, "mensagem": "❌ Licença já usada em outro dispositivo"}
                 break
 
-    # Se houve atualização, salva localmente e envia para GitHub
     if atualizado:
         salvar_licencas(licencas)
 
