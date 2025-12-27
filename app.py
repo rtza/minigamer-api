@@ -13,6 +13,7 @@ def salvar_licencas(licencas):
         for licenca in licencas:
             f.write("|".join(licenca) + "\n")
 
+    # Atualiza no GitHub se variáveis de ambiente estiverem configuradas
     repo = os.environ.get("GITHUB_REPO")
     user = os.environ.get("GITHUB_USER")
     token = os.environ.get("GITHUB_TOKEN")
@@ -35,6 +36,7 @@ def validar():
     dados = request.get_json()
     chave = dados.get("chave")
     hwid = dados.get("hwid")
+    primeira_ativacao = dados.get("primeira_ativacao", False)
 
     licencas = []
     resposta = {"valido": False, "mensagem": "❌ Chave inválida"}
@@ -78,15 +80,19 @@ def validar():
                     atualizado = True
                     resposta = {"valido": True, "mensagem": "✅ Licença ativada com sucesso", "dias": dias}
 
-                # Validação normal
+                # Validação normal ou tentativa de fraude
                 elif hwid_registrado == hwid:
-                    if data_ativacao:
+                    if primeira_ativacao:
+                        # 🚨 Tentativa de fraude → bloqueia
+                        licenca[1] = "bloqueado"
+                        atualizado = True
+                        resposta = {"valido": False, "mensagem": "❌ Chave bloqueada por tentativa de reativação"}
+                    elif data_ativacao:
                         data_final = data_ativacao + timedelta(days=dias)
                         if datetime.now() > data_final:
                             licenca[1] = "bloqueado"
                             atualizado = True
                             resposta = {"valido": False, "mensagem": "❌ Licença expirada/bloqueada pelo servidor"}
-                            # 👉 Aqui o app pode apagar o licenca.txt local
                         else:
                             resposta = {"valido": True, "mensagem": "Licença válida", "dias": dias}
                     else:
@@ -97,7 +103,6 @@ def validar():
                     licenca[1] = "bloqueado"
                     atualizado = True
                     resposta = {"valido": False, "mensagem": "❌ Licença já usada em outro dispositivo"}
-                    # 👉 Aqui também o app pode apagar o licenca.txt local
                 break
 
     if atualizado:
