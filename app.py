@@ -5,6 +5,7 @@ app = Flask(__name__)
 
 ARQUIVO_CHAVES = "licencas.txt"
 
+# 🔄 Carrega chaves do arquivo
 def carregar_chaves():
     chaves = {}
     with open(ARQUIVO_CHAVES, "r") as f:
@@ -15,7 +16,7 @@ def carregar_chaves():
                 status = partes[1]
                 hwid = partes[2] if partes[2] != "null" else None
                 dias = int(partes[3])
-                expira = partes[4] if len(partes) > 4 else None
+                expira = partes[4] if len(partes) > 4 and partes[4] else None
                 chaves[chave] = {
                     "status": status,
                     "hwid": hwid,
@@ -24,12 +25,14 @@ def carregar_chaves():
                 }
     return chaves
 
+# 🔄 Salva chaves no arquivo
 def salvar_chaves(chaves):
     with open(ARQUIVO_CHAVES, "w") as f:
         for chave, info in chaves.items():
             linha = f"{chave}|{info['status']}|{info['hwid'] or 'null'}|{info['dias']}|{info['expira'] or ''}\n"
             f.write(linha)
 
+# 🔎 Calcula dias restantes
 def dias_restantes(expira_str):
     if not expira_str:
         return 0
