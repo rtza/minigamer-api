@@ -51,22 +51,27 @@ def validar():
 
     # Procura a chave
     for licenca in licencas:
-        if licenca[0] == chave and licenca[1] in ["ativo", "usado"]:
-            if licenca[2] == "null":
-                # Primeira ativação → grava HWID
-                licenca[2] = hwid
-                licenca[1] = "usado"
-                atualizado = True
-                dias = int(licenca[3])
-                resposta = {"valido": True, "mensagem": "✅ Licença ativada com sucesso", "dias": dias}
-            elif licenca[2] == hwid:
-                # Mesmo PC → válido
-                dias = int(licenca[3])
-                resposta = {"valido": True, "mensagem": "Licença válida", "dias": dias}
-            else:
-                # HWID diferente → bloqueia
-                resposta = {"valido": False, "mensagem": "❌ Licença já usada em outro dispositivo"}
-            break
+        if licenca[0] == chave:
+            if licenca[1] == "bloqueado":
+                # Nova regra: chave bloqueada manualmente
+                resposta = {"valido": False, "mensagem": "❌ Licença bloqueada pelo administrador"}
+                break
+            elif licenca[1] in ["ativo", "usado"]:
+                if licenca[2] == "null":
+                    # Primeira ativação → grava HWID
+                    licenca[2] = hwid
+                    licenca[1] = "usado"
+                    atualizado = True
+                    dias = int(licenca[3])
+                    resposta = {"valido": True, "mensagem": "✅ Licença ativada com sucesso", "dias": dias}
+                elif licenca[2] == hwid:
+                    # Mesmo PC → válido
+                    dias = int(licenca[3])
+                    resposta = {"valido": True, "mensagem": "Licença válida", "dias": dias}
+                else:
+                    # HWID diferente → bloqueia
+                    resposta = {"valido": False, "mensagem": "❌ Licença já usada em outro dispositivo"}
+                break
 
     # Se houve atualização, salva localmente e envia para GitHub
     if atualizado:
