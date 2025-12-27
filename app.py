@@ -1,11 +1,33 @@
 from flask import Flask, request, jsonify
 import os
+import subprocess
 
 app = Flask(__name__)
 
-# Caminho absoluto para garantir que o arquivo seja encontrado
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LICENCAS_PATH = os.path.join(BASE_DIR, "licencas.txt")
+
+def salvar_licencas(licencas):
+    # Salva localmente no servidor Render
+    with open(LICENCAS_PATH, "w") as f:
+        for licenca in licencas:
+            f.write("|".join(licenca) + "\n")
+
+    # Faz commit e push para o GitHub
+    repo = os.environ.get("GITHUB_REPO")
+    user = os.environ.get("GITHUB_USER")
+    token = os.environ.get("GITHUB_TOKEN")
+
+    if repo and user and token:
+        subprocess.run(["git", "config", "--global", "user.email", "bot@render.com"])
+        subprocess.run(["git", "config", "--global", "user.name", "RenderBot"])
+        subprocess.run(["git", "add", "licencas.txt"])
+        subprocess.run(["git", "commit", "-m", "Atualizando HWID"])
+        subprocess.run([
+            "git", "push",
+            f"https://{user}:{token}@github.com/{repo}.git",
+            "main"
+        ])
 
 @app.route("/validar", methods=["POST"])
 def validar():
@@ -14,8 +36,8 @@ def validar():
     hwid = dados.get("hwid")
 
     licencas = []
-    atualizado = False
     resposta = {"valido": False, "mensagem": "❌ Chave inválida"}
+    atualizado = False
 
     # Lê todas as licenças
     with open(LICENCAS_PATH, "r") as f:
@@ -42,11 +64,9 @@ def validar():
                 resposta = {"valido": False, "mensagem": "❌ Licença já usada em outro dispositivo"}
             break
 
-    # Se houve atualização, salva o arquivo
+    # Se houve atualização, salva localmente e envia para GitHub
     if atualizado:
-        with open(LICENCAS_PATH, "w") as f:
-            for licenca in licencas:
-                f.write("|".join(licenca) + "\n")
+        salvar_licencas(licencas)
 
     return jsonify(resposta)
 
