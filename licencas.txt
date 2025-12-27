@@ -1,5 +1,5 @@
-A1B2C3D4E5 | ativo | 30 | null
-F6G7H8I9J0 | ativo | 60 | null
-K1L2M3N4O5 | ativo | 15 | null
-P6Q7R8S9T0 | ativo | 45 | null
-U1V2W3X4Y5 | ativo | 90 | null
+A1B2C3D4E5|ativo|30|null
+F6G7H8I9J0|ativo|60|null
+K1L2M3N4O5|ativo|15|null
+P6Q7R8S9T0|ativo|45|null
+U1V2W3X4Y5|ativo|90|null
