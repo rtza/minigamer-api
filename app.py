@@ -60,16 +60,17 @@ def validar():
                     except:
                         data_ativacao = None
 
+            # Bloqueada pelo admin
             if status == "bloqueado":
                 resposta = {"valido": False, "mensagem": "❌ Licença bloqueada pelo administrador"}
                 break
 
+            # Ativação / uso
             if status in ["ativo", "usado"]:
-                # Primeira ativação
+                # Primeira ativação legítima
                 if hwid_registrado == "null":
                     licenca[2] = hwid
                     licenca[1] = "usado"
-                    # 🔒 sempre grava a data de ativação no quinto campo
                     if len(licenca) < 5:
                         licenca.append(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
                     else:
@@ -83,8 +84,9 @@ def validar():
                         data_final = data_ativacao + timedelta(days=dias)
                         if datetime.now() > data_final:
                             licenca[1] = "bloqueado"
-                            resposta = {"valido": False, "mensagem": "❌ Licença expirada/bloqueada pelo servidor"}
                             atualizado = True
+                            resposta = {"valido": False, "mensagem": "❌ Licença expirada/bloqueada pelo servidor"}
+                            # 👉 Aqui o app pode apagar o licenca.txt local
                         else:
                             resposta = {"valido": True, "mensagem": "Licença válida", "dias": dias}
                     else:
@@ -95,6 +97,7 @@ def validar():
                     licenca[1] = "bloqueado"
                     atualizado = True
                     resposta = {"valido": False, "mensagem": "❌ Licença já usada em outro dispositivo"}
+                    # 👉 Aqui também o app pode apagar o licenca.txt local
                 break
 
     if atualizado:
