@@ -19,6 +19,10 @@ def salvar_licencas(licencas):
     token = os.environ.get("GITHUB_TOKEN")
 
     if repo and user and token:
+        # Garante que estamos na branch main (evita detached HEAD)
+        subprocess.run(["git", "checkout", "main"])
+        subprocess.run(["git", "pull", "origin", "main"])
+
         subprocess.run(["git", "config", "--global", "user.email", "bot@render.com"])
         subprocess.run(["git", "config", "--global", "user.name", "RenderBot"])
         subprocess.run(["git", "add", "licencas.txt"])
