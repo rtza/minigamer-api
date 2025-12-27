@@ -5,10 +5,9 @@ app = Flask(__name__)
 
 # Banco de dados simples em memória (substitua por DB real)
 chaves = {
-    "ABC123": {"valido": True, "hwid": None, "expira": None}
+    "K3YMNO7890": {"valido": True, "hwid": None, "expira": None}
 }
 
-# Função para calcular dias restantes
 def dias_restantes(expira):
     delta = expira - datetime.now()
     return max(0, delta.days)
@@ -55,7 +54,9 @@ def validar():
         info["valido"] = False
         return jsonify({"valido": False, "mensagem": "Licença expirada"})
 
-# Rota de ping para acordar Render
 @app.route("/ping", methods=["GET"])
 def ping():
     return jsonify({"status": "ok"})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000)
