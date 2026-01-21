@@ -5,6 +5,11 @@ from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
+# ✅ Rota raiz para responder ao MiniPinger
+@app.route("/")
+def home():
+    return "MiniGamer API ativo!", 200
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LICENCAS_PATH = os.path.join(BASE_DIR, "licencas.txt")
 
