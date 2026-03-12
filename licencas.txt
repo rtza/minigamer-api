@@ -1,4 +1,4 @@
-KEYA1B2C3D4|bloqueado|null|30|
+KEYA1B2C3D4|ativo|null|30|
 KEYE5F6G7H8|bloqueado|null|30|
 KEYM3N4O5P6|bloqueado|null|30|
 KEYQ7R8S9T0|bloqueado|null|30|
