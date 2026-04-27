@@ -6,4 +6,4 @@ KEYZ9X8C7V6|bloqueado|null|30|
 KEYB5N4M3K2|bloqueado|null|30|
 KEYL1P2O3Q4|bloqueado|null|30|
 KEYR5S6T7U8|bloqueado|null|30|
-KEYV9W8X7Y6|ativo|null|30|
+KEYV9W8X7Y6|usado|46417573975452|30|2026-04-27 02:17:44
